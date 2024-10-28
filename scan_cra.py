@@ -7,11 +7,20 @@ import pandas as pd
 import re
 import requests
 from datetime import datetime
+from tqdm import tqdm
 
-file_path = 'data/cra_11122023.html'
+# file_path = 'data/cra_11122023.html'
+file_path = 'data/cra_10282024.html'
+select_path = 'data/cra_10282024_select.txt'
 
+# read the html file
 with open(file_path, 'r', encoding='utf-8') as file:
     html_content = file.read()
+    
+# read the select file
+with open(select_path, 'r', encoding='utf-8') as file:
+    # read all lines into a list
+    select_urls = [line.strip() for line in file.readlines()]
 
 # Parse the HTML content
 soup = BeautifulSoup(html_content, 'html.parser')
@@ -74,7 +83,11 @@ def extract_and_convert_dates(text):
 
 # Print each list item
 df_dict = defaultdict(list)
-for idx, li_soup in enumerate(li_tags):
+for idx, li_soup in tqdm(enumerate(li_tags), total=len(li_tags)):
+    if li_soup.a['href'] not in select_urls:
+        continue
+    else:
+        print(f'[{idx}/{len(li_tags)}] {li_soup.a["href"]}')
     job_info = {
         "Position": li_soup.h3.text.strip() if li_soup.h3 else None,
         "Department": li_soup.find('div', class_='company').text.strip() if li_soup.find('div', class_='company') else None,

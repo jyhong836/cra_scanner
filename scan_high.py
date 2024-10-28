@@ -6,6 +6,14 @@ import pandas as pd
 import re
 import requests
 from datetime import datetime
+from utils import get_R1_university
+import time
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 
 def extract_and_convert_dates(text):
     # Regular expression to match dates in various formats
@@ -70,15 +78,31 @@ def scan_file(file_path, df_dict):
             continue
         if any([ex_pos in job_info['Department'].lower() for ex_pos in ['biology', 'management', 'law', 'math']]):
             continue
+        if job_info['Institute'].strip().lower() not in R1_list:
+            print(f" [Not R1] {job_info['Institute']}")
+            continue
         if job_info['Institute'] in df_cra['Institute'].values:
             if job_info["Department"] == "Computer Science":
-                print(f"{job_info['Institute']} has been recorded in CRA.")
+                print(f" [Exist] {job_info['Institute']} has been recorded in CRA.")
                 continue
         
         # response = requests.get(job_info['link'])
         # job_html_content = response.content
         # job_soup = BeautifulSoup(job_html_content, 'html.parser')
         # job_desc = job_soup.find('div', class_="jobDesc").text
+        
+        
+        # # Go to the webpage
+        # time.sleep(5)
+        # driver.get(job_info['link'])
+
+        # # Wait for an element to load
+        # element = WebDriverWait(driver, 1000).until(
+        #     EC.presence_of_element_located((By.ID, 'jobDesc'))
+        # )
+        # # Extract the data
+        # job_desc = element.text
+        
         # dates = extract_and_convert_dates(job_desc)
         # # dates = re.findall(date_pattern, job_desc)
         # if len(dates) > 0:
@@ -90,6 +114,15 @@ def scan_file(file_path, df_dict):
         
         for k, v in job_info.items():
             df_dict[k].append(v)
+
+R1_list = get_R1_university()
+R1_list = [u.strip().lower() for u in R1_list]
+
+driver_path = 'chromedriver/chromedriver'
+
+# Create a new instance of the browser
+driver = webdriver.Chrome(driver_path)
+
 
 df_cra = pd.read_csv('data/cra_11122023.csv')
 
