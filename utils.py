@@ -12,7 +12,7 @@ def get_R1_university():
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Finding the table for "Doctoral Universities – Very High Research Activity"
-    table = soup.find_all("table")[0]  # soup.find_all("table", class_="wikitable sortable jquery-tablesorter")
+    table = soup.find_all("table")[1]  # soup.find_all("table", class_="wikitable sortable jquery-tablesorter")
 
     # Extracting the university names from the table
     universities = []

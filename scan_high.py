@@ -1,5 +1,5 @@
 # Note to download the page first
-import os
+import os, csv
 from bs4 import BeautifulSoup
 from collections import defaultdict
 import pandas as pd
@@ -9,10 +9,10 @@ from datetime import datetime
 from utils import get_R1_university
 import time
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# from selenium import webdriver
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
 
 
 def extract_and_convert_dates(text):
@@ -68,18 +68,18 @@ def scan_file(file_path, df_dict):
             "post date": li_soup.find('div', class_='col-sm-5 text-sm-right').contents[2].split(' ')[2].strip(),
             "link": li_soup.find('a')['href'],
         }
-        job_info["post date"] = datetime.strptime(job_info["post date"], '%m/%d/%y')
+        job_info["post date"] = datetime.strptime(job_info["post date"], '%m/%d/%Y')
         if job_info["post date"] < datetime.strptime('06/01/23', '%m/%d/%y'):  # too old
             continue
         job_info["post date"] = job_info["post date"].strftime('%m/%d/%Y')
-        if any([ex_pos in job_info['Position'].lower() for ex_pos in ['lecturer', 'instructor', 'teaching', 'dean', 'chair', 'postdoc', 'fellow', 'tenured']]):
+        if any([ex_pos in job_info['Position'].lower() for ex_pos in ['lecturer', 'instructor', 'teaching', 'dean', 'chair', 'postdoc', 'doc', 'fellow', 'tenured', 'non-tenure', 'instructional', 'visiting', 'scientist', 'research faculty']]):
             continue
         if any([ex_pos in job_info['Location'].lower() for ex_pos in ['china', 'canada', 'hong kong']]):
             continue
         if any([ex_pos in job_info['Department'].lower() for ex_pos in ['biology', 'management', 'law', 'math']]):
             continue
         if job_info['Institute'].strip().lower() not in R1_list:
-            print(f" [Not R1] {job_info['Institute']}")
+            # print(f" [Not R1] {job_info['Institute']}")
             continue
         if job_info['Institute'] in df_cra['Institute'].values:
             if job_info["Department"] == "Computer Science":
@@ -114,20 +114,32 @@ def scan_file(file_path, df_dict):
         
         for k, v in job_info.items():
             df_dict[k].append(v)
+    print(f"scanned {len(li_tags)} items. total: {len(df_dict['Position'])}")
 
-R1_list = get_R1_university()
+
+# R1_list = get_R1_university()
+R1_list = []
+with open("data/csrankings.csv", mode='r', newline='') as file:
+    reader = csv.reader(file)
+    R1_list = [row[0] for row in reader]
+assert(len(R1_list) > 0)
 R1_list = [u.strip().lower() for u in R1_list]
+R1_list = R1_list[10:80]
+R1_list = [u for u in R1_list if not any(uu in u for uu in ["harvard", "yale", "princeton", "california institute of technology"])]
+print(f"Select {len(R1_list)} schools at csrakning")
 
 driver_path = 'chromedriver/chromedriver'
 
 # Create a new instance of the browser
-driver = webdriver.Chrome(driver_path)
+# driver = webdriver.Chrome(driver_path)
 
 
-df_cra = pd.read_csv('data/cra_11122023.csv')
+df_cra = pd.read_csv('data/cra_10282024.csv')
 
 df_dict = defaultdict(list)
-high_dir = 'data/highered_11122023'
+# high_dir = 'data/highered_11122023'
+high_dir = 'data/highered_11012024'
+
 files = os.listdir(high_dir)
 for file_name in files:
     if file_name.startswith('.'):
@@ -139,3 +151,4 @@ for file_name in files:
 df = pd.DataFrame(df_dict)
 print(df)
 df.to_csv(high_dir + '.csv')
+print(f"saved to {high_dir}.csv")
